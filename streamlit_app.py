@@ -10,7 +10,7 @@ if "shaft_elems" not in st.session_state:
 if "disk_elems" not in st.session_state:
     st.session_state.disk_elems = []
 if "bearing_elems" not in st.session_state:
-    st.session_state.beasring_elems = []
+    st.session_state.bearing_elems = []
 
 st.title("🌀 Interactive Rotor Dynamics Solver!")
 
