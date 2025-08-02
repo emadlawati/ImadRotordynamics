@@ -5,6 +5,7 @@ from ross.units import Q_
 from ross.probe import Probe
 import plotly.graph_objects as go
 import numba
+from ross.materials import Material
 
 # Initialize session state
 if "shaft_elems" not in st.session_state:
