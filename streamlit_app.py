@@ -5,7 +5,6 @@ from ross.units import Q_
 from ross.probe import Probe
 import plotly.graph_objects as go
 import numba
-from ross.materials import Material
 
 # Initialize session state
 if "shaft_elems" not in st.session_state:
@@ -27,8 +26,8 @@ if menu == "Home":
     "rotordynamic model with shaft, disk, bearing & seal elements, and run analysis on the created model to obtain outputs such as Static deflection, " \
     "Undamped critical speed map, Unbalance responses and much more, to become more familiar with the topic ")
 
-    #st.markdown("Below is an example of a Rotor model built for RHIP MP MGI K6111 through utilizing this solver")
-    #st.image("Rotor model.PNG", width = 1500)
+    st.markdown("Below is an example of a Rotor model built for RHIP MP MGI K6111 through utilizing this solver")
+    st.image("Rotor model.PNG", width = 1500)
 
     st.badge("")
 
@@ -68,14 +67,14 @@ if menu == "Shaft Elements":
         st.session_state.shaft_elems.append(elem)
         st.success(f"Added shaft element at node {n}")
 
-    
-    rotor = rs.Rotor(st.session_state.shaft_elems,
-                    st.session_state.disk_elems,
-                    st.session_state.bearing_elems,
-                     )
+    if st.session_state.shaft_elems:
+        rotor = rs.Rotor(st.session_state.shaft_elems,
+                        st.session_state.disk_elems,
+                        st.session_state.bearing_elems,
+                        )
 
-    fig = rotor.plot_rotor(nodes = 1)
-    st.plotly_chart(fig)
+        fig = rotor.plot_rotor(nodes = 1)
+        st.plotly_chart(fig)
 
 # ---------- Disk Elements ----------
 elif menu == "Disk Elements":
@@ -91,13 +90,15 @@ elif menu == "Disk Elements":
         st.session_state.disk_elems.append(elem)
         st.success(f"Added disk element at node {n}")
 
-    rotor = rs.Rotor(st.session_state.shaft_elems,
-                    st.session_state.disk_elems,
-                    st.session_state.bearing_elems,
-                     )
+    if st.session_state.shaft_elems:
+        rotor = rs.Rotor(st.session_state.shaft_elems,
+                        st.session_state.disk_elems,
+                        st.session_state.bearing_elems,
+                        )
 
-    fig = rotor.plot_rotor(nodes = 1)
-    st.plotly_chart(fig)
+        fig = rotor.plot_rotor(nodes = 1)
+        st.plotly_chart(fig)
+
 # ---------- Bearings & Seals ----------
 # Bearing Element
 elif menu == "Bearings & Seals":
@@ -155,10 +156,15 @@ elif menu == "Bearings & Seals":
 
             st.session_state.bearing_elems.append(elem)
             st.success(f"Bearing element at node {n_b} added.")
-        rotor = rs.Rotor(st.session_state.shaft_elems,
-                        st.session_state.disk_elems,
-                        st.session_state.bearing_elems,
-                        )
+        if st.session_state.shaft_elems:
+            rotor = rs.Rotor(st.session_state.shaft_elems,
+                            st.session_state.disk_elems,
+                            st.session_state.bearing_elems,
+                            )
+
+            fig = rotor.plot_rotor(nodes = 1)
+            st.plotly_chart(fig)
+
     
     else:  # Fluid Film Bearing
         n_b = st.number_input("Node number", min_value=0, value=0)
@@ -205,14 +211,15 @@ elif menu == "Bearings & Seals":
             )
             st.session_state.bearing_elems.append(fb)
             st.success(f"Added fluid‐film bearing at node {n_b}")
-            rotor = rs.Rotor(st.session_state.shaft_elems,
-                        st.session_state.disk_elems,
-                        st.session_state.bearing_elems,
-                        )
-   
+            if st.session_state.shaft_elems:
+                rotor = rs.Rotor(st.session_state.shaft_elems,
+                                st.session_state.disk_elems,
+                                st.session_state.bearing_elems,
+                                )
 
-            fig = rotor.plot_rotor(nodes = 1)
-            st.plotly_chart(fig)
+                fig = rotor.plot_rotor(nodes = 1)
+                st.plotly_chart(fig)
+
 # ---------- Analyses ----------
 elif menu == "Analyses":
     st.header("Rotor Model & Analyses")
