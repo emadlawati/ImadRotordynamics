@@ -7,6 +7,30 @@ from ross.materials import Material
 import plotly.graph_objects as go
 import numba
 
+# Materials
+from ross.materials import Material, steel  # :contentReference[oaicite:10]{index=10}
+
+# Shaft & lumped‐shaft elements
+from ross.shaft_element       import ShaftElement               # :contentReference[oaicite:11]{index=11}
+from ross.coupling_element    import CouplingElement            # :contentReference[oaicite:12]{index=12}
+
+# Disks, gears & point‐masses
+from ross.disk_element        import DiskElement                # :contentReference[oaicite:13]{index=13}
+from ross.point_mass          import PointMass                  # 
+
+# Bearings & seals
+from ross.bearing_seal_element import (
+    BearingElement, SealElement,
+    BallBearingElement, RollerBearingElement,
+    MagneticBearingElement,
+)                                                          # :contentReference[oaicite:15]{index=15}
+
+# Rotor assemblies
+from ross.rotor_assembly              import Rotor  # :contentReference[oaicite:16]{index=16}
+
+# Utilities
+from ross.units               import Q_                         # 
+from ross.probe           import Probe                      # 
 # Initialize session state
 if "shaft_elems" not in st.session_state:
     st.session_state.shaft_elems = []
