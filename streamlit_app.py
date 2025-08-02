@@ -3,6 +3,7 @@ import numpy as np
 import ross as rs
 from ross.units import Q_
 from ross.probe import Probe
+from ross.materials import Material
 import plotly.graph_objects as go
 import numba
 
@@ -26,8 +27,6 @@ if menu == "Home":
     "rotordynamic model with shaft, disk, bearing & seal elements, and run analysis on the created model to obtain outputs such as Static deflection, " \
     "Undamped critical speed map, Unbalance responses and much more, to become more familiar with the topic ")
 
-    st.markdown("Below is an example of a Rotor model built for RHIP MP MGI K6111 through utilizing this solver")
-    st.image("Rotor model.PNG", width = 1500)
 
     st.badge("")
 
