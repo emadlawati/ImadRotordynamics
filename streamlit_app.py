@@ -30,7 +30,7 @@ if menu == "Home":
 
     st.badge("")
 
-steel = rs.Material(name="Steel", rho=7850, E=2.059e11, Poisson=0.3)
+steel = Material(name="Steel", rho=7850, E=2.059e11, Poisson=0.3)
 
 if menu == "General tips":
     st.title("General tips in building a rotor model")
