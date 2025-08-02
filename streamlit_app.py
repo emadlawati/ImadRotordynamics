@@ -57,17 +57,17 @@ if menu == "Shaft Elements":
 
         if od_mass != od_stiff:
             rho_adj = steel.rho * (od_mass_m / od_stiff_m) ** 2
-            mat = rs.Material(name=f"adj_{n}", rho=rho_adj, E=steel.E, Poisson=steel.Poisson)
+            mat = Material(name=f"adj_{n}", rho=rho_adj, E=steel.E, Poisson=steel.Poisson)
         else:
             mat = steel
 
-        elem = rs.ShaftElement(L=L_m, idl=id_m, odl=od_stiff_m, material=mat, n=n,
+        elem = ShaftElement(L=L_m, idl=id_m, odl=od_stiff_m, material=mat, n=n,
                                shear_effects=True, rotary_inertia=True, gyroscopic=True)
         st.session_state.shaft_elems.append(elem)
         st.success(f"Added shaft element at node {n}")
 
     if st.session_state.shaft_elems:
-        rotor = rs.Rotor(st.session_state.shaft_elems,
+        rotor = Rotor(st.session_state.shaft_elems,
                         st.session_state.disk_elems,
                         st.session_state.bearing_elems,
                         )
@@ -85,12 +85,12 @@ elif menu == "Disk Elements":
     Id = st.number_input("Transverse inertia [kg.m²]", value=0.05)
 
     if st.button("Add Disk Element"):
-        elem = rs.DiskElement(n=n, m=m, Ip=Ip, Id=Id)
+        elem = DiskElement(n=n, m=m, Ip=Ip, Id=Id)
         st.session_state.disk_elems.append(elem)
         st.success(f"Added disk element at node {n}")
 
     if st.session_state.shaft_elems:
-        rotor = rs.Rotor(st.session_state.shaft_elems,
+        rotor = Rotor(st.session_state.shaft_elems,
                         st.session_state.disk_elems,
                         st.session_state.bearing_elems,
                         )
@@ -142,13 +142,13 @@ elif menu == "Bearings & Seals":
                 freqs_rpm = parse_list(freq_str)
                 frequencies = freqs_rpm * 2 * np.pi / 60  # convert to rad/s
 
-                elem = rs.BearingElement(
+                elem = BearingElement(
                     n=n_b, kxx=kxx_arr, kyy=kyy_arr, kxy=kxy_arr, kyx=kyx_arr,
                     cxx=cxx_arr, cyy=cyy_arr, cxy=cxy_arr, cyx=cyx_arr,
                     frequency=frequencies
                 )
             else:
-                elem = rs.BearingElement(
+                elem = BearingElement(
                     n=n_b, kxx=kxx_arr[0], kyy=kyy_arr[0], kxy=kxy_arr[0], kyx=kyx_arr[0],
                     cxx=cxx_arr[0], cyy=cyy_arr[0], cxy=cxy_arr[0], cyx=cyx_arr[0]
                 )
@@ -156,7 +156,7 @@ elif menu == "Bearings & Seals":
             st.session_state.bearing_elems.append(elem)
             st.success(f"Bearing element at node {n_b} added.")
         if st.session_state.shaft_elems:
-            rotor = rs.Rotor(st.session_state.shaft_elems,
+            rotor = Rotor(st.session_state.shaft_elems,
                             st.session_state.disk_elems,
                             st.session_state.bearing_elems,
                             )
@@ -194,7 +194,7 @@ elif menu == "Bearings & Seals":
             r_stator = (s_diam / 2.0) / 1000.0
             
             # instantiate a frequency-dependent bearing
-            fb = rs.BearingFluidFlow(
+            fb = BearingFluidFlow(
                 n            = n_b,
                 nz           = int(nz),
                 ntheta       = int(ntheta),
@@ -211,7 +211,7 @@ elif menu == "Bearings & Seals":
             st.session_state.bearing_elems.append(fb)
             st.success(f"Added fluid‐film bearing at node {n_b}")
             if st.session_state.shaft_elems:
-                rotor = rs.Rotor(st.session_state.shaft_elems,
+                rotor = Rotor(st.session_state.shaft_elems,
                                 st.session_state.disk_elems,
                                 st.session_state.bearing_elems,
                                 )
@@ -224,7 +224,7 @@ elif menu == "Analyses":
     st.header("Rotor Model & Analyses")
 
     if st.session_state.shaft_elems:
-        rotor = rs.Rotor(st.session_state.shaft_elems,
+        rotor = Rotor(st.session_state.shaft_elems,
                          st.session_state.disk_elems,
                          st.session_state.bearing_elems,
                          )
@@ -390,7 +390,7 @@ elif menu == "Analyses":
             node_number = st.number_input( "Node where cross-coupled stiffness is applied", value = 0)
             CompressorRPM = st.number_input (" Enter rated speed in RPM", value = 0)
             if st.button ("Start level 1 analysis"):
-                rotor1 = rs.Rotor(st.session_state.shaft_elems,
+                rotor1 = Rotor(st.session_state.shaft_elems,
                          st.session_state.disk_elems,
                          st.session_state.bearing_elems,
                          rated_w = CompressorRPM * np.pi/30)
