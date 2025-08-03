@@ -1,4 +1,5 @@
 streamlit
+ross-rotordynamics
 numpy
 scipy
 toml>=0.10.1
