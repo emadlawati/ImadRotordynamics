@@ -24,35 +24,36 @@ measurement = "displacement"   # displacement (proximity probes) | velocity
 amplitude_unit = "um_pp"       # um_pp | um_pk | mm_s_pk | mm_s_rms
 keyphasor_angle_deg = 0.0      # TODO: keyphasor location, from TDC in direction of rotation
 
-# Proximity probes. Example = API 670 X/Y at 45 deg either side of TDC, CW rotation
-# viewed from the driver (X = 315, Y = 45). For CCW viewed from driver use X = 45, Y = 315.
+# Proximity probes, API 670 X/Y at 45 deg either side of TDC. The site phases show Y
+# leading X at both bearings (rotation goes from the Y probe towards the X probe), so
+# X = 45, Y = 315 in "degrees from TDC in the direction of rotation".
 [[probe]]
 name = "NDE X"
 station = 15
-angle_deg = 315.0
+angle_deg = 45.0
 
 [[probe]]
 name = "NDE Y"
 station = 15
-angle_deg = 45.0
+angle_deg = 315.0
 
 [[probe]]
 name = "DE X"
 station = 103
-angle_deg = 315.0
+angle_deg = 45.0
 
 [[probe]]
 name = "DE Y"
 station = 103
-angle_deg = 45.0
+angle_deg = 315.0
 
 # 1X readings before balancing: [amplitude, phase lag deg]
-# PLACEHOLDER VALUES - replace with the site data.
+# Site readings, Bently Nevada convention (phase lag).
 [initial]
-"NDE X" = [10.0, 120.0]
-"NDE Y" = [10.0, 210.0]
-"DE X" = [60.0, 100.0]
-"DE Y" = [55.0, 190.0]
+"NDE X" = [26.0, 89.0]
+"NDE Y" = [25.0, 304.0]
+"DE X" = [113.0, 338.0]
+"DE Y" = [80.0, 219.0]
 
 # Optional: relative weighting of probes in the least-squares solution
 # [weights]

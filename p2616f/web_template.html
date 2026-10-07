@@ -118,15 +118,15 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
               <option value="water_1x">Water, new clearances</option>
             </select></label>
           <label class="f">Rotation, seen from motor
-            <select id="rot"><option value="CW">Clockwise</option><option value="CCW">Counter-clockwise</option></select></label>
+            <select id="rot"><option value="CW">Clockwise</option><option value="CCW" selected>Counter-clockwise</option></select></label>
           <label class="f">Keyphasor angle (° from top, with rotation)
             <input id="kp" type="number" step="1" value="0"></label>
           <label class="f">Weight angle measured
             <select id="conv"><option value="against">Against rotation from KP notch</option><option value="with">With rotation from KP notch</option></select></label>
           <label class="f">X probe angle (° from top, with rotation)
-            <input id="psix" type="number" step="1" value="315"></label>
+            <input id="psix" type="number" step="1" value="45"></label>
           <label class="f">Y probe angle (° from top, with rotation)
-            <input id="psiy" type="number" step="1" value="45"></label>
+            <input id="psiy" type="number" step="1" value="315"></label>
         </div>
         <p class="hint" style="margin:0">Proximity probes, 1X amplitude in µm pk-pk, phase = lag from the keyphasor pulse. Changing the rotation sets X/Y to the API 670 positions (X 45° left, Y 45° right of top, seen from the motor).</p>
       </section>
@@ -146,7 +146,7 @@ details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
           <thead><tr><th>Probe</th><th>µm pk-pk</th><th>Phase lag °</th></tr></thead>
           <tbody id="mbody"></tbody>
         </table>
-        <p class="hint" style="margin:0">Leave blank to see the effect of the weights only.</p>
+        <p class="hint" style="margin:0">Pre-filled with the site readings (Bently Nevada phase lag). Clear them to see the effect of the weights only.</p>
       </section>
 
       <section class="panel">
@@ -231,9 +231,9 @@ const lagOf = z => wrap360(deg(Math.atan2(z[1], z[0])));
 
 // ---------------------------------------------------------------- state
 const S = {
-  cond: "process_1x", rot: "CW", kp: 0, conv: "against", psix: 315, psiy: 45,
+  cond: "process_1x", rot: "CCW", kp: 0, conv: "against", psix: 45, psiy: 315,
   weights: [{ stn: D.coupling, g: 100, ang: 0, r: 100 }], sel: 0,
-  meas: { "NDE X": ["", ""], "NDE Y": ["", ""], "DE X": ["", ""], "DE Y": ["", ""] },
+  meas: { "NDE X": ["26", "89"], "NDE Y": ["25", "304"], "DE X": ["113", "338"], "DE Y": ["80", "219"] },
   cstn: D.coupling, crad: 100,
 };
 const iRated = D.speeds.indexOf(Math.round(D.meta.rpm));
