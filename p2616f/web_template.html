@@ -1,0 +1,714 @@
+<title>P-2616F Balancing Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an instrument panel. Rotor drawing spans the top, controls left, live readings right, Bode below. */
+:root {
+  --bg: #eceff2;
+  --panel: #fbfcfd;
+  --ink: #18212b;
+  --muted: #5a6776;
+  --line: #ccd4dc;
+  --steel: #9aa7b4;
+  --steel-edge: #6d7b89;
+  --part: #c4ccd5;
+  --accent: #c8650f;
+  --accent-soft: #c8650f22;
+  --brg: #34495e;
+  --seal: #8a6bb0;
+  --p-ndex: #1f5fa6;
+  --p-ndey: #5c9bd6;
+  --p-dex: #0d7f5f;
+  --p-dey: #48b38c;
+  --good: #1d8a4e;
+  --warn: #b7791f;
+  --font-display: "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif;
+  --font-body: "Barlow", "Segoe UI", Arial, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10151b; --panel: #171e26; --ink: #e3e9ef; --muted: #93a0ae; --line: #2a3541;
+    --steel: #56636f; --steel-edge: #7d8b98; --part: #3a4652; --accent: #f09a3e; --accent-soft: #f09a3e2a;
+    --brg: #a9bdd1; --seal: #b49ad8; --p-ndex: #6fa8ea; --p-ndey: #a9cdf2; --p-dex: #4fc79c; --p-dey: #9be0c4;
+    --good: #5cc98a; --warn: #e0b04f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10151b; --panel: #171e26; --ink: #e3e9ef; --muted: #93a0ae; --line: #2a3541;
+  --steel: #56636f; --steel-edge: #7d8b98; --part: #3a4652; --accent: #f09a3e; --accent-soft: #f09a3e2a;
+  --brg: #a9bdd1; --seal: #b49ad8; --p-ndex: #6fa8ea; --p-ndey: #a9cdf2; --p-dex: #4fc79c; --p-dey: #9be0c4;
+  --good: #5cc98a; --warn: #e0b04f; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: 20px; padding-block: 20px 48px; display: grid; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: .01em; margin: 0; text-wrap: balance; }
+h1 span { color: var(--accent); }
+.sub { color: var(--muted); font-size: 14px; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; margin: 0; color: var(--muted); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: 13px; }
+.scroll-x { overflow-x: auto; }
+svg { display: block; }
+svg text { font-family: var(--font-body); fill: var(--ink); }
+.grid-main { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.col { display: grid; gap: 18px; min-width: 0; }
+@media (max-width: 900px) { .grid-main { grid-template-columns: minmax(0, 1fr); } }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+label.f { display: grid; gap: 3px; font-size: 13px; color: var(--muted); }
+input, select, button { font: inherit; color: var(--ink); }
+input, select { background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 5px 7px; min-width: 0; width: 100%; font-family: var(--font-data); font-size: 14px; }
+select { font-family: var(--font-body); }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button { cursor: pointer; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); padding: 6px 12px; font-weight: 600; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.ghost { background: transparent; border-color: transparent; color: var(--muted); padding: 4px 6px; }
+button.ghost:hover { color: var(--accent); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+td { white-space: nowrap; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.num, .num { font-family: var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.sel td { background: var(--accent-soft); }
+.wtable input { padding: 4px 5px; }
+.wtable td:first-child { width: 34%; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.big { font-family: var(--font-data); font-size: 22px; font-weight: 500; }
+.result { border: 1px solid var(--accent); border-radius: 6px; padding: 10px 12px; display: grid; gap: 6px; background: var(--accent-soft); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; border: 1px solid currentColor; }
+.pill.good { color: var(--good); } .pill.warn { color: var(--warn); }
+.charts2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 640px) { .charts2, .form-grid { grid-template-columns: minmax(0, 1fr); } }
+.tip { position: fixed; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; font-size: 13px; box-shadow: 0 2px 8px #0003; z-index: 5; max-width: 260px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
+details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.notes { font-size: 13px; color: var(--muted); display: grid; gap: 4px; max-width: 80ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>P-2616F <span>Balancing Simulator</span></h1>
+    <div class="sub" id="meta"></div>
+  </header>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Rotor model</h2>
+      <span class="hint">Click a station to place the selected weight there. Hover for details.</span>
+    </div>
+    <div class="scroll-x"><svg id="rotor" viewBox="0 0 1200 300" style="min-width:760px;width:100%"></svg></div>
+    <div class="panel-head"><h2>1X response along the shaft to the weights below</h2><span class="hint">Orbit major axis, µm pk-pk, at <span id="rpmlbl"></span> rpm</span></div>
+    <div class="scroll-x"><svg id="shape" viewBox="0 0 1200 170" style="min-width:760px;width:100%"></svg></div>
+  </section>
+
+  <div class="grid-main">
+    <div class="col">
+      <section class="panel">
+        <h2>Machine &amp; instrumentation</h2>
+        <div class="form-grid">
+          <label class="f">Seal condition
+            <select id="cond">
+              <option value="process_1x">Process fluid, new clearances</option>
+              <option value="process_2x">Process fluid, 2x worn clearances</option>
+              <option value="water_1x">Water, new clearances</option>
+            </select></label>
+          <label class="f">Rotation, seen from motor
+            <select id="rot"><option value="CW">Clockwise</option><option value="CCW" selected>Counter-clockwise</option></select></label>
+          <label class="f">Keyphasor angle (° from top, with rotation)
+            <input id="kp" type="number" step="1" value="0"></label>
+          <label class="f">Weight angle measured
+            <select id="conv"><option value="against">Against rotation from KP notch</option><option value="with">With rotation from KP notch</option></select></label>
+          <label class="f">X probe angle (° from top, with rotation)
+            <input id="psix" type="number" step="1" value="45"></label>
+          <label class="f">Y probe angle (° from top, with rotation)
+            <input id="psiy" type="number" step="1" value="315"></label>
+        </div>
+        <p class="hint" style="margin:0">Proximity probes, 1X amplitude in µm pk-pk, phase = lag from the keyphasor pulse. Changing the rotation sets X/Y to the API 670 positions (X 45° left, Y 45° right of top, seen from the motor).</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2>Weights on the rotor</h2><button class="ghost" id="addw" type="button">+ Add weight</button></div>
+        <table class="wtable">
+          <thead><tr><th>Station</th><th>Mass g</th><th>Angle °</th><th>Radius mm</th><th></th></tr></thead>
+          <tbody id="wbody"></tbody>
+        </table>
+        <p class="hint" style="margin:0">The highlighted row moves when you click a station on the rotor.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Measured 1X before balancing</h2>
+        <table>
+          <thead><tr><th>Probe</th><th>µm pk-pk</th><th>Phase lag °</th></tr></thead>
+          <tbody id="mbody"></tbody>
+        </table>
+        <p class="hint" style="margin:0">Pre-filled with the site readings (Bently Nevada phase lag). Clear them to see the effect of the weights only.</p>
+      </section>
+
+      <section class="panel">
+        <h2>One-shot correction</h2>
+        <div class="form-grid">
+          <label class="f">Balance plane
+            <select id="cstn"></select></label>
+          <label class="f">Radius mm
+            <input id="crad" type="number" step="1" value="100"></label>
+        </div>
+        <div id="corr"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel">
+        <div class="panel-head"><h2>Bearing probe readings at <span id="rpmlbl2"></span> rpm</h2></div>
+        <div class="scroll-x">
+        <table>
+          <thead><tr><th>Probe</th><th>Effect of weights</th><th>Measured</th><th>Predicted with weights</th><th>Change</th></tr></thead>
+          <tbody id="rbody"></tbody>
+        </table></div>
+      </section>
+      <div class="charts2">
+        <section class="panel">
+          <h2>Polar plot</h2>
+          <svg id="polar" viewBox="0 0 320 320"></svg>
+          <div class="legend"><span>○ measured</span><span>● predicted</span><span>→ effect of weights</span></div>
+        </section>
+        <section class="panel">
+          <h2>Shaft orbits, seen from motor</h2>
+          <svg id="orbits" viewBox="0 0 320 320"></svg>
+          <div class="legend" id="orbitlegend"></div>
+        </section>
+      </div>
+      <section class="panel">
+        <div class="panel-head"><h2>Effect of the weights vs speed</h2><span class="hint">Coast-down / run-up view, µm pk-pk</span></div>
+        <svg id="bode" viewBox="0 0 640 350"></svg>
+        <div class="legend" id="bodelegend"></div>
+      </section>
+      <section class="panel">
+        <h2>Influence coefficients at the balance plane</h2>
+        <div class="scroll-x"><table>
+          <thead><tr><th>Probe</th><th>Process new</th><th>Process 2x worn</th><th>Water new</th></tr></thead>
+          <tbody id="icbody"></tbody>
+        </table></div>
+        <p class="hint" style="margin:0" id="ichint"></p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel notes">
+    <h2>About the model</h2>
+    <div>ROSS finite-element model built from the OEM lateral analysis (SOA700000035 rev. 0). It uses all 123 shaft sub-elements, 27 added masses, speed-dependent DE/NDE sleeve-bearing coefficients with cross-coupling, and Childs annular-seal coefficients (K, k, C, c, M) for each seal condition. It matches the report's dry criticals (961/3775/7674 vs 955/3807/7612 rpm) and its damped modes at 2980 rpm (1671/2467/3971 cpm, ζ 0.54/0.76/0.72 for process fluid, new clearances).</div>
+    <div>Supports are rigid ground behind the oil film, so the readings are shaft displacements as seen by proximity probes. Impeller–volute forces are not in the report and not in the model. Responses add linearly, so several weights can be combined.</div>
+    <div>Angle conventions: probe and keyphasor angles are measured from top dead centre in the direction of rotation. Phase is lag. A weight angle measured against rotation from the keyphasor notch (notch lined up under the keyphasor probe) moves every phase lag by the same amount.</div>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const D = /*__DATA__*/null;
+const NS = D.stations.length;
+const PROBES = [
+  { key: "NDE X", brg: 0, ax: "x", color: "--p-ndex" },
+  { key: "NDE Y", brg: 0, ax: "y", color: "--p-ndey" },
+  { key: "DE X",  brg: 1, ax: "x", color: "--p-dex" },
+  { key: "DE Y",  brg: 1, ax: "y", color: "--p-dey" },
+];
+
+// ---------------------------------------------------------------- complex math
+const cadd = (a, b) => [a[0] + b[0], a[1] + b[1]];
+const cmul = (a, b) => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
+const cscale = (a, s) => [a[0] * s, a[1] * s];
+const cconj = a => [a[0], -a[1]];
+const cabs = a => Math.hypot(a[0], a[1]);
+const rad = d => d * Math.PI / 180;
+const deg = r => r * 180 / Math.PI;
+const wrap360 = d => ((d % 360) + 360) % 360;
+const polarC = (amp, phDeg) => [amp * Math.cos(rad(phDeg)), amp * Math.sin(rad(phDeg))];
+const lagOf = z => wrap360(deg(Math.atan2(z[1], z[0])));
+
+// ---------------------------------------------------------------- state
+const S = {
+  cond: "process_1x", rot: "CCW", kp: 0, conv: "against", psix: 45, psiy: 315,
+  weights: [{ stn: D.coupling, g: 100, ang: 0, r: 100 }], sel: 0,
+  meas: { "NDE X": ["26", "89"], "NDE Y": ["25", "304"], "DE X": ["113", "338"], "DE Y": ["80", "219"] },
+  cstn: D.coupling, crad: 100,
+};
+const iRated = D.speeds.indexOf(Math.round(D.meta.rpm));
+
+// weight -> complex unbalance in ROSS frame (kg.m, phase from model +x, with rotation)
+function weightPhasor(w) {
+  const me = (+w.g || 0) * (+w.r || 0) * 1e-6;
+  const beta = S.conv === "with" ? -(+w.ang || 0) : (+w.ang || 0);  // against-rotation angle
+  return polarC(me, 90 + S.kp - beta);                                // notch under KP at t=0
+}
+function brgUnit(cond, si, stn, j) {   // j: 0 NDEx 1 NDEy 2 DEx 3 DEy
+  const a = D.resp[cond].bearings[si], k = ((stn - 1) * 4 + j) * 2;
+  return [a[k], a[k + 1]];
+}
+function shapeUnit(cond, ustn, rstn, dir) {
+  const a = D.resp[cond].shape, k = (((ustn - 1) * NS + (rstn - 1)) * 2 + dir) * 2;
+  return [a[k], a[k + 1]];
+}
+// complex x,y at both bearings for a set of weights
+function bearingXY(cond, si, weights) {
+  const q = [[0, 0], [0, 0], [0, 0], [0, 0]];
+  for (const w of weights) {
+    if (!D.stations.includes(+w.stn)) continue;
+    const u = weightPhasor(w);
+    for (let j = 0; j < 4; j++) q[j] = cadd(q[j], cmul(brgUnit(cond, si, +w.stn, j), u));
+  }
+  return q;
+}
+function probeAngle(p) { return p.ax === "x" ? S.psix : S.psiy; }
+// probe reading as lag-complex in um pk-pk
+function probeReading(q, p) {
+  const a = rad(90 + probeAngle(p));
+  const qx = q[p.brg * 2], qy = q[p.brg * 2 + 1];
+  const P = cadd(cscale(qx, Math.cos(a)), cscale(qy, Math.sin(a)));
+  return cscale(cconj(P), 2e6);
+}
+function readings(cond, si, weights) {
+  const q = bearingXY(cond, si, weights);
+  return PROBES.map(p => probeReading(q, p));
+}
+function measured() {
+  return PROBES.map(p => {
+    const [a, ph] = S.meas[p.key];
+    return a === "" || ph === "" || isNaN(+a) || isNaN(+ph) ? null : polarC(+a, +ph);
+  });
+}
+// IC per gram at 0 deg (lag frame) for a plane
+function influence(cond, stn, r) {
+  const save = S.conv; S.conv = "against";
+  const H = readings(cond, iRated, [{ stn, g: 1, ang: 0, r }]);
+  S.conv = save;
+  return H;
+}
+function solveCorrection(H, v) {
+  let num = [0, 0], den = 0;
+  H.forEach((h, i) => { if (v[i]) { num = cadd(num, cmul(cconj(h), v[i])); den += cabs(h) ** 2; } });
+  if (!den) return null;
+  const W = cscale(num, -1 / den);                     // against-rotation frame
+  const g = cabs(W), angA = lagOf(W);
+  const ang = S.conv === "with" ? wrap360(-angA) : angA;
+  const resid = H.map((h, i) => v[i] ? cadd(v[i], cmul(h, W)) : null);
+  return { g, ang, resid };
+}
+
+// ---------------------------------------------------------------- helpers
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const $ = id => document.getElementById(id);
+const fmt = (z, d = 1) => z ? `${cabs(z).toFixed(d)} @ ${lagOf(z).toFixed(0)}°` : "–";
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function stationLabel(s) {
+  const parts = [];
+  if (s === D.bearings.NDE) parts.push("NDE bearing");
+  if (s === D.bearings.DE) parts.push("DE bearing");
+  for (const d of D.disks) if (d.stn === s) parts.push(d.tag);
+  for (const q of D.seals) if (q.stn === s) parts.push(q.name.replace(/_/g, " ") + " seal");
+  return parts.join(", ");
+}
+
+// ---------------------------------------------------------------- rotor drawing
+const X0 = 50, XW = 1060, ZMAX = D.segs.at(-1)[0] + D.segs.at(-1)[1];
+const zx = z => X0 + z / ZMAX * XW;
+const RS = XW / ZMAX;          // px per mm, true radial scale
+const YC = 160;
+function drawRotor() {
+  const svg = $("rotor");
+  let h = "";
+  // centreline
+  h += `<line x1="${X0 - 20}" x2="${X0 + XW + 20}" y1="${YC}" y2="${YC}" stroke="var(--muted)" stroke-dasharray="12 4 2 4" stroke-width="0.8"/>`;
+  // disks behind shaft
+  for (const d of D.disks) {
+    const x = zx(D.z[d.stn - 1]);
+    const r = d.dia / 2 * RS;
+    const isImp = /impeller/i.test(d.tag), isCpl = /coupling/i.test(d.tag), isScrew = /screw/i.test(d.tag);
+    const w = isCpl ? 70 * RS : isImp ? 46 * RS : isScrew ? 30 * RS : 14 * RS;
+    const fill = isImp || isCpl ? "var(--part)" : "var(--steel)";
+    h += `<rect x="${(x - w / 2).toFixed(1)}" y="${(YC - r).toFixed(1)}" width="${w.toFixed(1)}" height="${(2 * r).toFixed(1)}" fill="${fill}" stroke="var(--steel-edge)" stroke-width="0.7" rx="1.5"/>`;
+  }
+  // shaft
+  for (const [z0, L, dl, dr] of D.segs) {
+    const x1 = zx(z0), x2 = zx(z0 + L), r1 = dl / 2 * RS, r2 = dr / 2 * RS;
+    h += `<polygon points="${x1},${YC - r1} ${x2},${YC - r2} ${x2},${YC + r2} ${x1},${YC + r1}" fill="var(--steel)" stroke="var(--steel)" stroke-width="0.4"/>`;
+  }
+  let outline = "", outlineB = "";
+  for (const [z0, L, dl, dr] of D.segs) {
+    outline += `${zx(z0)},${YC - dl / 2 * RS} ${zx(z0 + L)},${YC - dr / 2 * RS} `;
+    outlineB += `${zx(z0)},${YC + dl / 2 * RS} ${zx(z0 + L)},${YC + dr / 2 * RS} `;
+  }
+  h += `<polyline points="${outline}" fill="none" stroke="var(--steel-edge)" stroke-width="0.8"/>`;
+  h += `<polyline points="${outlineB}" fill="none" stroke="var(--steel-edge)" stroke-width="0.8"/>`;
+  // seals
+  for (const q of D.seals) {
+    const x = zx(D.z[q.stn - 1]);
+    h += `<line x1="${x}" x2="${x}" y1="${YC - 30}" y2="${YC - 21}" stroke="var(--seal)" stroke-width="2.5"/><line x1="${x}" x2="${x}" y1="${YC + 21}" y2="${YC + 30}" stroke="var(--seal)" stroke-width="2.5"/>`;
+  }
+  // bearings
+  for (const [name, s] of [["NDE bearing", D.bearings.NDE], ["DE bearing", D.bearings.DE]]) {
+    const x = zx(D.z[s - 1]), w = 104 * RS, r = 108 / 2 * RS;
+    h += `<rect x="${x - w / 2}" y="${YC + r}" width="${w}" height="10" fill="var(--brg)"/>`;
+    h += `<rect x="${x - w / 2}" y="${YC - r - 10}" width="${w}" height="10" fill="var(--brg)"/>`;
+    h += `<path d="M${x},${YC + r + 10} l-10,22 h20 z" fill="none" stroke="var(--brg)" stroke-width="1.4"/>`;
+    for (let i = -12; i <= 8; i += 5) h += `<line x1="${x + i}" y1="${YC + r + 36}" x2="${x + i + 5}" y2="${YC + r + 32}" stroke="var(--brg)" stroke-width="1"/>`;
+    h += `<line x1="${x - 14}" x2="${x + 14}" y1="${YC + r + 32}" y2="${YC + r + 32}" stroke="var(--brg)" stroke-width="1.4"/>`;
+    h += `<text x="${x}" y="${YC + r + 54}" text-anchor="middle" font-size="13" font-weight="600">${name} · stn ${s}</text>`;
+    h += `<text x="${x}" y="${YC + r + 70}" text-anchor="middle" font-size="11.5" fill="var(--muted)" style="fill:var(--muted)">X ${S.psix}° · Y ${S.psiy}° probes</text>`;
+  }
+  // labels
+  const lab = (s, txt, dy = -1) => {
+    const x = zx(D.z[s - 1]);
+    h += `<text x="${x}" y="${dy < 0 ? 20 : 290}" text-anchor="middle" font-size="12" style="fill:var(--muted)">${txt}</text>`;
+    h += `<line x1="${x}" x2="${x}" y1="${dy < 0 ? 25 : 278}" y2="${dy < 0 ? 40 : 268}" stroke="var(--muted)" stroke-width="0.6"/>`;
+  };
+  lab(1, "Screw pump"); lab(29, "1st stage impeller"); lab(60, "Stages 2–7 impellers");
+  lab(94, "Balance sleeve"); lab(D.coupling, "Coupling hub");
+  h += `<text x="${X0 + XW + 12}" y="${YC + 4}" font-size="12" font-weight="600">→ Motor</text>`;
+  h += `<text x="${X0 - 44}" y="${YC + 4}" font-size="12" style="fill:var(--muted)">NDE</text>`;
+  // weights
+  S.weights.forEach((w, i) => {
+    const s = +w.stn; if (!D.stations.includes(s)) return;
+    const x = zx(D.z[s - 1]);
+    const top = 44 + (i % 3) * 16;
+    h += `<line x1="${x}" x2="${x}" y1="${top + 6}" y2="${YC - 12}" stroke="var(--accent)" stroke-width="${i === S.sel ? 2 : 1.2}"/>`;
+    h += `<circle cx="${x}" cy="${top}" r="6" fill="var(--accent)"/>`;
+    const right = x > X0 + XW - 120;
+    h += `<text x="${right ? x - 10 : x + 10}" y="${top + 4}" text-anchor="${right ? "end" : "start"}" font-size="12" font-weight="600" style="fill:var(--accent)">${(+w.g).toFixed(0)} g @ ${(+w.ang).toFixed(0)}° · r ${(+w.r).toFixed(0)}</text>`;
+  });
+  // station hit areas
+  for (let i = 0; i < NS; i++) {
+    const x1 = i === 0 ? X0 - 6 : (zx(D.z[i - 1]) + zx(D.z[i])) / 2;
+    const x2 = i === NS - 1 ? X0 + XW + 6 : (zx(D.z[i]) + zx(D.z[i + 1])) / 2;
+    h += `<rect class="hit" data-s="${i + 1}" x="${x1}" y="30" width="${Math.max(x2 - x1, 1)}" height="250" fill="transparent" style="cursor:pointer"/>`;
+  }
+  svg.innerHTML = h;
+}
+function hookRotor() {
+  const svg = $("rotor"), tip = $("tip");
+  svg.addEventListener("mousemove", e => {
+    const t = e.target.closest(".hit"); if (!t) { tip.hidden = true; return; }
+    const s = +t.dataset.s;
+    tip.innerHTML = `<b>Station ${s}</b> · z = ${D.z[s - 1].toFixed(0)} mm<br>${esc(stationLabel(s) || "shaft")}`;
+    tip.hidden = false;
+    tip.style.left = Math.min(e.clientX + 14, innerWidth - 270) + "px"; tip.style.top = (e.clientY + 14) + "px";
+  });
+  svg.addEventListener("mouseleave", () => { tip.hidden = true; });
+  svg.addEventListener("click", e => {
+    const t = e.target.closest(".hit"); if (!t) return;
+    if (!S.weights.length) S.weights.push({ stn: +t.dataset.s, g: 100, ang: 0, r: 100 }), S.sel = 0;
+    else S.weights[S.sel].stn = +t.dataset.s;
+    renderWeights(); update();
+  });
+}
+
+// ---------------------------------------------------------------- shape along shaft
+function drawShape() {
+  const svg = $("shape");
+  const amps = D.stations.map(rs => {
+    let qx = [0, 0], qy = [0, 0];
+    for (const w of S.weights) {
+      if (!D.stations.includes(+w.stn)) continue;
+      const u = weightPhasor(w);
+      qx = cadd(qx, cmul(shapeUnit(S.cond, +w.stn, rs, 0), u));
+      qy = cadd(qy, cmul(shapeUnit(S.cond, +w.stn, rs, 1), u));
+    }
+    const s = cabs(qx) ** 2 + cabs(qy) ** 2;
+    const c = cadd(cmul(qx, qx), cmul(qy, qy));
+    return 2e6 * Math.sqrt((s + cabs(c)) / 2);
+  });
+  const vmax = Math.max(...amps, 1e-9);
+  const nice = niceMax(vmax);
+  const y0 = 140, yh = 115, yv = v => y0 - v / nice * yh;
+  let h = "";
+  for (let k = 0; k <= 4; k++) {
+    const v = nice * k / 4, y = yv(v);
+    h += `<line x1="${X0}" x2="${X0 + XW}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="0.7"/>`;
+    h += `<text x="${X0 - 6}" y="${y + 4}" font-size="11" text-anchor="end" class="num" style="fill:var(--muted)">${trimNum(v)}</text>`;
+  }
+  let pts = `${zx(D.z[0])},${y0} `;
+  D.stations.forEach((s, i) => { pts += `${zx(D.z[i]).toFixed(1)},${yv(amps[i]).toFixed(1)} `; });
+  pts += `${zx(D.z[NS - 1])},${y0}`;
+  h += `<polygon points="${pts}" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>`;
+  for (const [nm, s] of [["NDE", D.bearings.NDE], ["DE", D.bearings.DE]]) {
+    const x = zx(D.z[s - 1]);
+    h += `<line x1="${x}" x2="${x}" y1="${y0}" y2="${y0 - yh - 4}" stroke="var(--brg)" stroke-dasharray="3 3"/>`;
+    h += `<text x="${x}" y="${y0 + 16}" text-anchor="middle" font-size="12">${nm} probes ${amps[s - 1].toFixed(1)} µm</text>`;
+  }
+  const xc = zx(D.z[D.coupling - 1]);
+  h += `<text x="${Math.min(xc, X0 + XW - 30)}" y="${yv(amps[D.coupling - 1]) - 8}" text-anchor="middle" font-size="12" style="fill:var(--accent)">${amps[D.coupling - 1].toFixed(1)}</text>`;
+  svg.innerHTML = h;
+}
+function niceMax(v) { const p = 10 ** Math.floor(Math.log10(v)); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; }
+function trimNum(v) { return v >= 10 && Number.isInteger(v) ? v.toFixed(0) : v >= 1 ? +v.toFixed(1) + "" : +v.toFixed(2) + ""; }
+
+// ---------------------------------------------------------------- weights / measurements UI
+function stationOptions(sel) {
+  return D.stations.map(s => {
+    const l = stationLabel(s);
+    return `<option value="${s}" ${s === +sel ? "selected" : ""}>${s}${l ? " – " + esc(l) : ""}</option>`;
+  }).join("");
+}
+function renderWeights() {
+  $("wbody").innerHTML = S.weights.map((w, i) => `
+    <tr class="${i === S.sel ? "sel" : ""}" data-i="${i}">
+      <td><select id="w-stn-${i}" aria-label="Station">${stationOptions(w.stn)}</select></td>
+      <td><input id="w-g-${i}" type="number" step="1" min="0" value="${w.g}" aria-label="Mass grams"></td>
+      <td><input id="w-a-${i}" type="number" step="1" value="${w.ang}" aria-label="Angle degrees"></td>
+      <td><input id="w-r-${i}" type="number" step="1" min="0" value="${w.r}" aria-label="Radius mm"></td>
+      <td><button class="ghost" type="button" data-del="${i}" aria-label="Remove weight">✕</button></td>
+    </tr>`).join("");
+}
+function hookWeights() {
+  const body = $("wbody");
+  body.addEventListener("input", e => {
+    const tr = e.target.closest("tr"); if (!tr) return;
+    const i = +tr.dataset.i, w = S.weights[i];
+    const id = e.target.id;
+    if (id.startsWith("w-stn")) w.stn = +e.target.value;
+    if (id.startsWith("w-g")) w.g = e.target.value;
+    if (id.startsWith("w-a")) w.ang = e.target.value;
+    if (id.startsWith("w-r")) w.r = e.target.value;
+    update();
+  });
+  body.addEventListener("focusin", e => {
+    const tr = e.target.closest("tr"); if (!tr) return;
+    if (S.sel !== +tr.dataset.i) { S.sel = +tr.dataset.i; body.querySelectorAll("tr").forEach(r => r.classList.toggle("sel", +r.dataset.i === S.sel)); drawRotor(); }
+  });
+  body.addEventListener("click", e => {
+    const b = e.target.closest("[data-del]"); if (!b) return;
+    S.weights.splice(+b.dataset.del, 1); S.sel = Math.max(0, Math.min(S.sel, S.weights.length - 1));
+    renderWeights(); update();
+  });
+  $("addw").addEventListener("click", () => {
+    S.weights.push({ stn: D.coupling, g: 50, ang: 0, r: 100 }); S.sel = S.weights.length - 1; renderWeights(); update();
+  });
+}
+function renderMeas() {
+  $("mbody").innerHTML = PROBES.map((p, i) => `
+    <tr><td><span class="swatch" style="background:var(${p.color})"></span>${p.key}</td>
+    <td><input id="m-a-${i}" type="number" step="0.1" min="0" value="${S.meas[p.key][0]}" placeholder="amp"></td>
+    <td><input id="m-p-${i}" type="number" step="1" value="${S.meas[p.key][1]}" placeholder="lag"></td></tr>`).join("");
+  $("mbody").addEventListener("input", e => {
+    const m = e.target.id.match(/^m-([ap])-(\d)$/); if (!m) return;
+    S.meas[PROBES[+m[2]].key][m[1] === "a" ? 0 : 1] = e.target.value; update();
+  });
+}
+
+// ---------------------------------------------------------------- results
+function renderResults() {
+  const eff = readings(S.cond, iRated, S.weights);
+  const v0 = measured();
+  $("rbody").innerHTML = PROBES.map((p, i) => {
+    const pred = v0[i] ? cadd(v0[i], eff[i]) : null;
+    let ch = "–";
+    if (pred) {
+      const r = cabs(pred) / Math.max(cabs(v0[i]), 1e-9);
+      const pct = (r - 1) * 100;
+      ch = `<span class="pill ${pct <= 0 ? "good" : "warn"}">${pct > 0 ? "+" : ""}${pct.toFixed(0)} %</span>`;
+    }
+    return `<tr><td><span class="swatch" style="background:var(${p.color})"></span>${p.key}</td>
+      <td class="num">${fmt(eff[i], 2)}</td><td class="num">${fmt(v0[i])}</td><td class="num">${fmt(pred)}</td><td>${ch}</td></tr>`;
+  }).join("");
+  drawPolar(eff, v0);
+  drawOrbits(v0);
+}
+
+function drawPolar(eff, v0) {
+  const svg = $("polar"), cx = 160, cy = 160, R = 130;
+  const pts = [];
+  eff.forEach((e, i) => { pts.push(cabs(e)); if (v0[i]) { pts.push(cabs(v0[i]), cabs(cadd(v0[i], e))); } });
+  const nice = niceMax(Math.max(...pts, 1e-6));
+  // lag increases clockwise from top
+  const P = z => { const a = rad(lagOf(z)), r = cabs(z) / nice * R; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
+  let h = `<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>`;
+  for (let k = 1; k <= 4; k++) h += `<circle cx="${cx}" cy="${cy}" r="${R * k / 4}" fill="none" stroke="var(--line)"/>`;
+  for (let a = 0; a < 360; a += 30) {
+    const x = cx + (R + 12) * Math.sin(rad(a)), y = cy - (R + 12) * Math.cos(rad(a));
+    h += `<line x1="${cx}" y1="${cy}" x2="${cx + R * Math.sin(rad(a))}" y2="${cy - R * Math.cos(rad(a))}" stroke="var(--line)" stroke-width="0.6"/>`;
+    h += `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="10.5" style="fill:var(--muted)">${a}</text>`;
+  }
+  h += `<text x="${cx + 4}" y="${cy - R / 2 + 12}" font-size="10.5" class="num" style="fill:var(--muted)">${trimNum(nice / 2)}</text>`;
+  h += `<text x="${cx + 4}" y="${cy - R + 12}" font-size="10.5" class="num" style="fill:var(--muted)">${trimNum(nice)} µm</text>`;
+  PROBES.forEach((p, i) => {
+    const col = `var(${p.color})`;
+    if (v0[i]) {
+      const a = P(v0[i]), b = P(cadd(v0[i], eff[i]));
+      h += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${col}" stroke-width="1.6" marker-end="url(#arr)"/>`;
+      h += `<circle cx="${a[0]}" cy="${a[1]}" r="5" fill="var(--panel)" stroke="${col}" stroke-width="2"/>`;
+      h += `<circle cx="${b[0]}" cy="${b[1]}" r="4.5" fill="${col}"/>`;
+    } else {
+      const b = P(eff[i]);
+      h += `<line x1="${cx}" y1="${cy}" x2="${b[0]}" y2="${b[1]}" stroke="${col}" stroke-width="2" marker-end="url(#arr)"/>`;
+    }
+  });
+  svg.innerHTML = h;
+}
+
+function drawOrbits(v0) {
+  // predicted orbit if all 4 measurements exist, else effect-only orbit
+  const svg = $("orbits");
+  const q = bearingXY(S.cond, iRated, S.weights);
+  const sgn = S.rot === "CW" ? -1 : 1;   // model +x on screen: left for CW (seen from motor)
+  const full = v0.every(Boolean);
+  // reconstruct measured shaft x,y phasors from the two probes when available
+  const orbitQ = b => {
+    const pX = PROBES[b * 2], pY = PROBES[b * 2 + 1];
+    let qx = q[b * 2], qy = q[b * 2 + 1];
+    if (full) {
+      // P_k = qx cos a_k + qy sin a_k ; P = conj(lag)/2e6
+      const P1 = cscale(cconj(v0[b * 2]), 0.5e-6), P2 = cscale(cconj(v0[b * 2 + 1]), 0.5e-6);
+      const a1 = rad(90 + S.psix), a2 = rad(90 + S.psiy);
+      const det = Math.cos(a1) * Math.sin(a2) - Math.sin(a1) * Math.cos(a2);
+      if (Math.abs(det) > 1e-6) {
+        const mx = cscale(cadd(cscale(P1, Math.sin(a2)), cscale(P2, -Math.sin(a1))), 1 / det);
+        const my = cscale(cadd(cscale(P2, Math.cos(a1)), cscale(P1, -Math.cos(a2))), 1 / det);
+        qx = cadd(qx, mx); qy = cadd(qy, my);
+      }
+    }
+    return [qx, qy];
+  };
+  const orbs = [orbitQ(0), orbitQ(1)];
+  let maxA = 1e-12;
+  const paths = orbs.map(([qx, qy]) => {
+    const pts = [];
+    for (let k = 0; k <= 72; k++) {
+      const t = 2 * Math.PI * k / 72;
+      const x = (qx[0] * Math.cos(t) - qx[1] * Math.sin(t)) * 1e6;   // um 0-pk
+      const y = (qy[0] * Math.cos(t) - qy[1] * Math.sin(t)) * 1e6;
+      pts.push([sgn * x, y]);
+      maxA = Math.max(maxA, Math.hypot(x, y));
+    }
+    return pts;
+  });
+  const nice = niceMax(maxA);
+  let h = "";
+  const centers = [[85, 165], [235, 165]], R = 62;
+  const names = ["NDE", "DE"];
+  orbs.forEach(([qx, qy], b) => {
+    const [cx, cy] = centers[b];
+    h += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--line)"/>`;
+    h += `<line x1="${cx - R}" x2="${cx + R}" y1="${cy}" y2="${cy}" stroke="var(--line)" stroke-width="0.6"/><line x1="${cx}" x2="${cx}" y1="${cy - R}" y2="${cy + R}" stroke="var(--line)" stroke-width="0.6"/>`;
+    const pts = paths[b].map(([x, y]) => `${(cx + x / nice * R).toFixed(1)},${(cy - y / nice * R).toFixed(1)}`).join(" ");
+    const col = b ? "var(--p-dex)" : "var(--p-ndex)";
+    h += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2"/>`;
+    const [kx, ky] = paths[b][0];
+    h += `<circle cx="${cx + kx / nice * R}" cy="${cy - ky / nice * R}" r="3.5" fill="var(--panel)" stroke="${col}" stroke-width="1.6"/>`;
+    // probe directions
+    for (const p of [PROBES[b * 2], PROBES[b * 2 + 1]]) {
+      const psi = rad(probeAngle(p));
+      const dx = (S.rot === "CW" ? 1 : -1) * Math.sin(psi), dy = Math.cos(psi);
+      h += `<line x1="${cx + dx * (R + 2)}" y1="${cy - dy * (R + 2)}" x2="${cx + dx * (R + 16)}" y2="${cy - dy * (R + 16)}" stroke="var(${p.color})" stroke-width="4"/>`;
+      h += `<text x="${cx + dx * (R + 26)}" y="${cy - dy * (R + 26) + 4}" text-anchor="middle" font-size="11" font-weight="600">${p.ax.toUpperCase()}</text>`;
+    }
+    h += `<text x="${cx}" y="${cy + R + 42}" text-anchor="middle" font-size="13" font-weight="600">${names[b]}</text>`;
+  });
+  h += `<text x="160" y="22" text-anchor="middle" font-size="11.5" style="fill:var(--muted)">ring = ${trimNum(nice)} µm 0-pk · ○ = keyphasor dot · rotation ${S.rot === "CW" ? "↻" : "↺"}</text>`;
+  svg.innerHTML = h;
+  $("orbitlegend").innerHTML = full ? "<span>Predicted orbit: measured + weights</span>" : "<span>Orbit caused by the weights only. Enter all four readings to see the predicted orbit.</span>";
+}
+
+function drawBode() {
+  const svg = $("bode");
+  const sp = D.speeds;
+  const series = PROBES.map(() => []);
+  sp.forEach((n, si) => readings(S.cond, si, S.weights).forEach((z, i) => series[i].push(z)));
+  const L = 52, Rr = 625, T1 = 14, H1 = 170, T2 = 214, H2 = 90;
+  const xs = n => L + (n - sp[0]) / (sp.at(-1) - sp[0]) * (Rr - L);
+  const amax = niceMax(Math.max(...series.flat().map(cabs), 1e-6));
+  let h = "";
+  for (let k = 0; k <= 4; k++) {
+    const y = T1 + H1 - H1 * k / 4;
+    h += `<line x1="${L}" x2="${Rr}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="0.7"/><text x="${L - 6}" y="${y + 4}" text-anchor="end" font-size="11" style="fill:var(--muted)">${trimNum(amax * k / 4)}</text>`;
+  }
+  for (const ph of [0, 90, 180, 270, 360]) {
+    const y = T2 + H2 - H2 * ph / 360;
+    h += `<line x1="${L}" x2="${Rr}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="0.7"/><text x="${L - 6}" y="${y + 4}" text-anchor="end" font-size="11" style="fill:var(--muted)">${ph}</text>`;
+  }
+  for (let n = 500; n <= sp.at(-1); n += 500) {
+    h += `<text x="${xs(n)}" y="${T2 + H2 + 16}" text-anchor="middle" font-size="11" style="fill:var(--muted)">${n}</text>`;
+    h += `<line x1="${xs(n)}" x2="${xs(n)}" y1="${T1}" y2="${T2 + H2}" stroke="var(--line)" stroke-width="0.5"/>`;
+  }
+  h += `<text x="${(L + Rr) / 2}" y="${T2 + H2 + 32}" text-anchor="middle" font-size="12" style="fill:var(--muted)">Speed, rpm</text>`;
+  h += `<text x="12" y="${T1 + H1 / 2}" font-size="11.5" transform="rotate(-90 12 ${T1 + H1 / 2})" text-anchor="middle" style="fill:var(--muted)">µm pk-pk</text>`;
+  h += `<text x="12" y="${T2 + H2 / 2}" font-size="11.5" transform="rotate(-90 12 ${T2 + H2 / 2})" text-anchor="middle" style="fill:var(--muted)">lag °</text>`;
+  const xr = xs(D.meta.rpm);
+  h += `<line x1="${xr}" x2="${xr}" y1="${T1}" y2="${T2 + H2}" stroke="var(--accent)" stroke-dasharray="4 3"/><text x="${xr - 4}" y="${T1 + 12}" text-anchor="end" font-size="11.5" style="fill:var(--accent)">${D.meta.rpm} rpm</text>`;
+  series.forEach((ser, i) => {
+    const col = `var(${PROBES[i].color})`;
+    const pa = ser.map((z, k) => `${xs(sp[k]).toFixed(1)},${(T1 + H1 - cabs(z) / amax * H1).toFixed(1)}`).join(" ");
+    h += `<polyline points="${pa}" fill="none" stroke="${col}" stroke-width="2"/>`;
+    ser.forEach((z, k) => { h += `<circle cx="${xs(sp[k]).toFixed(1)}" cy="${(T2 + H2 - lagOf(z) / 360 * H2).toFixed(1)}" r="1.8" fill="${col}"/>`; });
+  });
+  svg.innerHTML = h;
+  $("bodelegend").innerHTML = PROBES.map(p => `<span><span class="swatch" style="background:var(${p.color})"></span>${p.key}</span>`).join("");
+}
+
+function renderIC() {
+  const stn = +S.cstn, r = +S.crad || 100;
+  const Hs = D.conditions.map(c => influence(c, stn, r));
+  $("icbody").innerHTML = PROBES.map((p, i) => `<tr><td><span class="swatch" style="background:var(${p.color})"></span>${p.key}</td>${Hs.map(H => `<td class="num">${fmt(cscale(H[i], 100), 2)}</td>`).join("")}</tr>`).join("");
+  $("ichint").textContent = `µm pk-pk @ lag ° per 100 g at 0° on station ${stn} (${stationLabel(stn) || "shaft"}), radius ${r} mm, ${D.meta.rpm} rpm.`;
+}
+
+function renderCorrection() {
+  const v0 = measured();
+  const el = $("corr");
+  if (!v0.some(Boolean)) {
+    el.innerHTML = `<p class="hint" style="margin:0">Enter the measured 1X readings to calculate the correction weight for the selected plane. The solution is a least-squares fit over all probes you entered.</p>`;
+    return;
+  }
+  const stn = +S.cstn, r = +S.crad || 100;
+  const H = influence(S.cond, stn, r);
+  const sol = solveCorrection(H, v0);
+  if (!sol) { el.innerHTML = ""; return; }
+  const singles = PROBES.map((p, i) => {
+    if (!v0[i] || cabs(H[i]) < 1e-12) return null;
+    const W = cscale(cmul(v0[i], cconj(H[i])), -1 / cabs(H[i]) ** 2);
+    const a = S.conv === "with" ? wrap360(-lagOf(W)) : lagOf(W);
+    return `${p.key}: ${cabs(W).toFixed(0)} g @ ${a.toFixed(0)}°`;
+  }).filter(Boolean);
+  el.innerHTML = `<div class="result">
+      <div class="hint">Correction weight at station ${stn}, r = ${r} mm, angle ${S.conv} rotation from KP notch</div>
+      <div class="big">${sol.g.toFixed(0)} g @ ${sol.ang.toFixed(0)}°</div>
+      <div class="hint">${(sol.g * r).toLocaleString(undefined, { maximumFractionDigits: 0 })} g·mm · predicted after: ${PROBES.map((p, i) => sol.resid[i] ? `${p.key} ${cabs(sol.resid[i]).toFixed(1)}` : "").filter(Boolean).join(", ")} µm</div>
+      <div class="row"><button class="primary" type="button" id="usecorr">Use this weight</button><span class="hint">Replaces the weight list with this correction.</span></div>
+    </div>
+    <details><summary>Solution from each probe alone</summary><div class="hint num" style="margin-top:4px">${singles.join("<br>")}</div></details>`;
+  $("usecorr").onclick = () => {
+    S.weights = [{ stn, g: +sol.g.toFixed(1), ang: +sol.ang.toFixed(1), r }]; S.sel = 0;
+    renderWeights(); update();
+  };
+}
+
+function update() {
+  drawRotor(); drawShape(); renderResults(); drawBode(); renderIC(); renderCorrection();
+}
+
+// ---------------------------------------------------------------- init
+function init() {
+  $("meta").textContent = `${D.meta.type} · ${D.meta.rpm} rpm · motor direct coupled · rotor ${D.meta.mass} kg · ROSS model from ${D.meta.source}`;
+  $("rpmlbl").textContent = $("rpmlbl2").textContent = D.meta.rpm;
+  $("cstn").innerHTML = stationOptions(S.cstn);
+  for (const id of ["cond", "kp", "conv", "psix", "psiy", "crad", "cstn"]) {
+    $(id).addEventListener("input", e => {
+      const v = e.target.value;
+      S[id] = ["kp", "psix", "psiy"].includes(id) ? (+v || 0) : v;
+      update();
+    });
+  }
+  $("rot").addEventListener("input", e => {
+    S.rot = e.target.value;
+    [S.psix, S.psiy] = S.rot === "CW" ? [315, 45] : [45, 315];
+    $("psix").value = S.psix; $("psiy").value = S.psiy;
+    update();
+  });
+  renderWeights(); hookWeights(); renderMeas(); hookRotor();
+  update();
+  if (window.matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", update);
+}
+init();
+</script>
