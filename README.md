@@ -69,3 +69,19 @@ Weight angles are measured from the keyphasor notch against rotation. The tests 
 `tests/test_p2616f.py` check these conventions.
 
 Run the tests with `python -m pytest tests`.
+
+### Interactive page
+
+`web/p2616f_balancer.html` is a self-contained page with the rotor drawing. On it you can:
+
+* place weights at any station, with mass, angle and radius;
+* see the 1X effect at the DE and NDE X/Y proximity probes, on a polar plot, as orbits, as a Bode plot and along the shaft;
+* enter the measured 1X readings and get a one-shot correction.
+
+Rebuild the page after you change the model:
+
+```
+python -m p2616f.export_web --out web/p2616f_balancer.html
+```
+
+The page source is `p2616f/web_template.html`.

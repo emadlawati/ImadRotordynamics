@@ -9,6 +9,7 @@
 #   * weight angle: from keyphasor notch, AGAINST rotation (set weight_angle_with_rotation
 #     = true if you measure with rotation)
 
+# Proximity probes on a direct-coupled motor drive at 2980 rpm.
 [machine]
 condition = "process_1x"   # process_1x | process_2x | water_1x | dry
 rpm = 2980
